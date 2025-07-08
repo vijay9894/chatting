@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Conversation } from "./conversation.entity";
 import { In, Repository } from "typeorm";
@@ -18,71 +18,73 @@ export class ConversationService {
 
   async createOneToOneConversation(senderId: number, receiverId: number, content: string) {
 
-    // const userIds = [userAId , userBId]
-    const senderRows = await this.participantRepo.find({
-      relations: {
-        user: true,
-        conversation: true
-      },
-      where: {
-        user: In([
-          senderId,
-        ]),
-      },
-    })
+    try {
 
-    const senderConversationIds = [...new Set(senderRows.map(row => row.conversation.id))];
-    console.log(senderConversationIds); // 1 2
-
-    const receiverRows = await this.participantRepo.find({
-      relations: {
-        user: true,
-        conversation: true
-      },
-      where: {
-        user: In([
-          receiverId,
-        ]),
-      },
-    })
-
-    const receiverConversationIds = [...new Set(receiverRows.map(row => row.conversation.id))];
-    console.log(receiverConversationIds); // 2
-
-    const conversationIds = senderConversationIds.filter(id => receiverConversationIds.includes(id));
-    console.log(conversationIds); // 2
-
-
-    const oneToOneconvos = await this.conversationRepo.find({
-      where: {
-        id: In([...conversationIds]),
-        isGroup: false,
+      if (!senderId || !receiverId || !content) {
+        throw new BadRequestException('Invalid input data');
       }
-    })
 
-    console.log(oneToOneconvos);
+      if (senderId === receiverId) {
+        throw new BadRequestException('Sender and receiver cannot be the same');
+      }
 
-    let conversation: Conversation;
-    if (oneToOneconvos.length > 0) {
-      conversation = oneToOneconvos[0];
-    } else {
-      conversation = await this.conversationRepo.save({
-        isGroup: false,
+      const participantRows = await this.participantRepo.find({
+        where: {
+          user: In([senderId, receiverId]),
+        },
+        relations: {
+          conversation: true,
+        }
       });
-      await this.participantRepo.save([
-        { user: { id: senderId }, conversation },
-        { user: { id: receiverId }, conversation },
-      ]);
-    }
-    console.log(conversation);
-    await this.messageRepo.save({
-      content,
-      conversation,
-      sender: { id: senderId }
-    })
 
-    return conversation;
+      const conversationIds = [...new Set(participantRows.map(row => row.conversation.id))];
+      const participantCount = participantRows.reduce((acc, row) => {
+        acc[row.conversation.id] = (acc[row.conversation.id] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>);
+
+      const oneTooneConvo = await this.conversationRepo.findOne({
+        where: {
+          id: In(conversationIds),
+          isGroup: false,
+        }
+      });
+
+      let conversation: Conversation;
+
+      if (oneTooneConvo && participantCount[oneTooneConvo.id] === 2) {
+        conversation = oneTooneConvo;
+      } else {
+        conversation = await this.conversationRepo.save({
+          isGroup: false,
+        });
+
+        console.log(`conversation created with id ${conversation.id}`);
+
+        const participants = this.participantRepo.create([
+          { user: { id: senderId }, conversation: { id: conversation.id } },
+          { user: { id: receiverId }, conversation: { id: conversation.id } },
+        ]);
+
+        await this.participantRepo.save(participants);
+        console.log(`participants added ${senderId} and ${receiverId}`);
+      }
+      await this.messageRepo.save({
+        content,
+        conversation: { id: conversation.id },
+        sender: { id: senderId }
+      })
+
+      console.log('message saved');
+
+      return conversation;
+
+    }
+    catch (error) {
+      console.log('Error in createOneToOneConversation:', error);
+    }
   }
+
 }
 
 

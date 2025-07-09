@@ -85,22 +85,65 @@ export class ConversationService {
     }
   }
 
-  async createGroupMessage(isGroup: boolean, conversationId: number, content: string, senderId: number , userIds: number[]) {
-    let conversation: Conversation;
-    console.log("isGroup", isGroup , "conversationId", conversationId, "content", content, "senderId", senderId, "userIds", userIds);
-     if(isGroup){
-          await this.messageRepo.save({
-            content,
-            conversation: { id: conversationId },
-            sender: { id: senderId }
-          })
-     }
-     else{
-          return ;
-     }
+  async createGroupConversation(creatorId: number, userIds: number[], groupName: string) {
+    let savedParticipants;
+    try {
+      if (!creatorId || !userIds || userIds.length === 0 || !groupName) {
+        throw new BadRequestException('Invalid input data');
+      }
+
+      const creatingConversation = await this.conversationRepo.save({
+        isGroup: true,
+        groupName
+      })
+      console.log(`Group conversation created with ID ${creatingConversation}`);
+
+      const allUesrIds = [creatorId, ...userIds];
+
+      const participants = allUesrIds.map(userId => ({
+        user: { id: userId },
+        conversation: { id: creatingConversation.id }
+      }));
+
+      console.log('participants added', participants);
+
+      for(const participant of participants) {
+        savedParticipants=  await this.participantRepo.save({
+           user : {id :participant.user.id},
+            conversation : {id : creatingConversation.id}
+        });
+      }
+      console.log('participants saved', savedParticipants);
+
+      return creatingConversation;
+    }
+    catch (error) {
+      console.error('Error in createGroupConversation:', error);
+      throw new BadRequestException('Failed to create group conversation');
+    }
+  }
+
+  async createGroupMessage(isGroup: boolean, conversationId: number, content: string, senderId: number, userIds: number[]) {
+    try {
+      if (!isGroup || !conversationId || !content || !senderId || !userIds || userIds.length === 0) {
+        throw new BadRequestException('Invalid input data');
+      }
+
+      // console.log("isGroup", isGroup, "conversationId", conversationId, "content", content, "senderId", senderId, "userIds", userIds);
+      if (isGroup)
+        await this.messageRepo.save({
+          content,
+          conversation: { id: conversationId },
+          sender: { id: senderId }
+        })
+
+    }
+    catch (error) {
+      console.error('Error in createGroupMessage:', error);
+      throw new BadRequestException('Failed to create group message');
     }
 
+  }
+
 }
-
-
 

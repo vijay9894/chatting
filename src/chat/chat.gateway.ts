@@ -18,7 +18,8 @@ export class ChatGateway implements OnModuleInit {
 
     onModuleInit() {
     this.server.on('connection', (socket: Socket) => {
-      const userId = Number(socket.handshake.query.userId);
+    //   const userId = Number(socket.handshake.query.userId);
+    const userId = 5; 
       if (!userId) {
         console.error('No userId provided in socket handshake');
         socket.disconnect();
@@ -46,14 +47,18 @@ export class ChatGateway implements OnModuleInit {
         },
         @ConnectedSocket() socket: Socket) {
         //  const creatorId = Number(socket.handshake.query.userId);
-        const creatorId = 1;
-        let conversation;
+        const creatorId = 5;
         console.log(`User ${creatorId} created a conversation`, payload);
 
         if (payload.isGroup) {
-            console
+            if (!payload.groupName || payload.groupName.trim() === '') {
+                socket.emit('error', { message: 'Group name is required' });
+                return;
+            }
+           const conversation = await this.conversationService.createGroupConversation(creatorId, payload.userIds, payload.groupName);
+            console.log(`Group conversation created with ID ${conversation.id}`);
         } else {
-
+            
         }
 
         const participantIds = [...payload.userIds, creatorId];

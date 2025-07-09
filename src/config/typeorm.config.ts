@@ -10,8 +10,8 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   host: 'localhost',
   port: 5432,
   username: 'postgres',
-  password: 'Vijay@9894',
-  database: 'chat_app',
+  password: '1004',
+  database: 'postgres',
   entities: [User,Conversation ,ConversationParticipant, Message],
   synchronize: true
 }

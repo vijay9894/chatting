@@ -121,4 +121,47 @@ export class ChatGateway implements OnModuleInit {
         }
     }
 
+    @SubscribeMessage('newMessageInGroup')
+    async handleNewGroupMessage
+        (
+            @MessageBody()
+            payload: {
+                senderId: number;
+                userIds: number[];
+                conversationId: number;
+                isGroup: boolean;
+                content: string;
+            },
+            @ConnectedSocket() socket: Socket
+        ) {
+        const { senderId, conversationId, userIds, isGroup, content } = payload;
+
+        let conversation = await this.conversationService.createGroupMessage(isGroup, conversationId, content, senderId,userIds);
+
+        const receiverIds = userIds.filter(id => id !== senderId);
+
+        receiverIds.forEach(userId => {
+            const socketIds = this.onlineUsers.get(userId);
+            if (socketIds) {
+                this.server.to(socketIds).emit('receiveGroupMessage', {
+                    conversationId,
+                    senderId,
+                    content,
+                    isGroup,
+                    createdAt: new Date(), // fallback if not returned
+                });
+            }
+        });
+
+         socket.emit('messageSentInGroup',{
+                conversationId,
+                receiverIds,
+                content,
+                createdAt: new Date(),
+            })
+
+    }
+
+
+
 }

@@ -85,6 +85,21 @@ export class ConversationService {
     }
   }
 
+  async createGroupMessage(isGroup: boolean, conversationId: number, content: string, senderId: number , userIds: number[]) {
+    let conversation: Conversation;
+    console.log("isGroup", isGroup , "conversationId", conversationId, "content", content, "senderId", senderId, "userIds", userIds);
+     if(isGroup){
+          await this.messageRepo.save({
+            content,
+            conversation: { id: conversationId },
+            sender: { id: senderId }
+          })
+     }
+     else{
+          return ;
+     }
+    }
+
 }
 
 

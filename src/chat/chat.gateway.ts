@@ -18,8 +18,8 @@ export class ChatGateway implements OnModuleInit {
 
     onModuleInit() {
     this.server.on('connection', (socket: Socket) => {
-    //   const userId = Number(socket.handshake.query.userId);
-    const userId = 5; 
+      const userId = Number(socket.handshake.query.userId);
+    // const userId = 5; 
       if (!userId) {
         console.error('No userId provided in socket handshake');
         socket.disconnect();

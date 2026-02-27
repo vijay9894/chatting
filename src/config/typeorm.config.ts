@@ -7,11 +7,12 @@ import { Message } from 'src/message/message.entity';
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
-  host: 'localhost',
+  host: 'postgres',
   port: 5432,
   username: 'postgres',
   password: '1004',
   database: 'postgres',
-  entities: [User,Conversation ,ConversationParticipant, Message],
+  entities: [User, Conversation, ConversationParticipant, Message],
   synchronize: true
+
 }

@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  app:
+    image: chatting # <-- Your custom NestJS image
+    container_name: chatting_app
+    ports:
+      - "3001:3001" # Exposes your app on localhost:3000
+    environment:
+      DB_HOST: postgres # Service name of PostgreSQL
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: 1004
+      DB_NAME: postgres
+    depends_on:
+      - postgres # Ensure postgres starts first
+    restart: always
+
+  postgres:
+    image: postgres:15 # Official Postgres image
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1004
+      POSTGRES_DB: postgres
+      TZ: Asia/Kolkata
+    ports:
+      - "5433:5432" # Exposes DB to host machine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: always
+
+volumes:
+  postgres_data: # Named volume to persist DB data

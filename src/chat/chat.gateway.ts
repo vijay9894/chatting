@@ -17,24 +17,24 @@ export class ChatGateway implements OnModuleInit {
     private onlineUsers = new Map<number, string>();
 
     onModuleInit() {
-    this.server.on('connection', (socket: Socket) => {
-      const userId = Number(socket.handshake.query.userId);
-    // const userId = 5; 
-      if (!userId) {
-        console.error('No userId provided in socket handshake');
-        socket.disconnect();
-        return;
-      }
-      this.onlineUsers.set(userId, socket.id);
-      console.log(`User ${userId} connected with socket ID ${socket.id}`);
+        this.server.on('connection', (socket: Socket) => {
+            const userId = Number(socket.handshake.query.userId);
+            // const userId = 5; 
+            if (!userId) {
+                console.error('No userId provided in socket handshake');
+                socket.disconnect();
+                return;
+            }
+            this.onlineUsers.set(userId, socket.id);
+            console.log(`User ${userId} connected with socket ID ${socket.id}`);
 
-      // Handle disconnect
-      socket.on('disconnect', () => {
-        this.onlineUsers.delete(userId);
-        console.log(`User ${userId} disconnected`);
-      });
-    });
-  }
+            // Handle disconnect
+            socket.on('disconnect', () => {
+                this.onlineUsers.delete(userId);
+                console.log(`User ${userId} disconnected`);
+            });
+        });
+    }
 
 
     @SubscribeMessage('createConversation')
@@ -55,10 +55,10 @@ export class ChatGateway implements OnModuleInit {
                 socket.emit('error', { message: 'Group name is required' });
                 return;
             }
-           const conversation = await this.conversationService.createGroupConversation(creatorId, payload.userIds, payload.groupName);
+            const conversation = await this.conversationService.createGroupConversation(creatorId, payload.userIds, payload.groupName);
             console.log(`Group conversation created with ID ${conversation.id}`);
         } else {
-            
+
         }
 
         const participantIds = [...payload.userIds, creatorId];
@@ -109,7 +109,7 @@ export class ChatGateway implements OnModuleInit {
                     createdAt: conversation.createdAt,
                 });
             }
-            else{
+            else {
                 console.log(`Reciever with ID ${receiverId} is not online but message saved in to db`);
             }
 
@@ -141,7 +141,7 @@ export class ChatGateway implements OnModuleInit {
         ) {
         const { senderId, conversationId, userIds, isGroup, content } = payload;
 
-        let conversation = await this.conversationService.createGroupMessage(isGroup, conversationId, content, senderId,userIds);
+        let conversation = await this.conversationService.createGroupMessage(isGroup, conversationId, content, senderId, userIds);
 
         const receiverIds = userIds.filter(id => id !== senderId);
 
@@ -158,12 +158,12 @@ export class ChatGateway implements OnModuleInit {
             }
         });
 
-         socket.emit('messageSentInGroup',{
-                conversationId,
-                receiverIds,
-                content,
-                createdAt: new Date(),
-            })
+        socket.emit('messageSentInGroup', {
+            conversationId,
+            receiverIds,
+            content,
+            createdAt: new Date(),
+        })
 
     }
 
